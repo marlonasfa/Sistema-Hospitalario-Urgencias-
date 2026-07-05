@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación Sistema Hospitalario - SJBAUTISTA</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-hospital me-2"></i>
+                <span>Sistema Hospitalario</span>
+            </a>
+            <span class="navbar-text text-light ms-auto">
+                Universidad Privada San Juan Bautista 2026-I
+            </span>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container-fluid py-4">
+        
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <h1 class="card-title mb-2">
+                            <i class="bi bi-graph-up"></i> Simulación de Emergencias Hospitalarias
+                        </h1>
+                        <p class="card-text mb-0">
+                            Optimización y Simulación de Sistemas - Asignatura 2026-I
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-sliders"></i> Panel de Control</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <p class="mb-2"><strong>Simulación del sistema hospitalario de urgencias</strong></p>
+                                <p class="text-muted small mb-0">
+                                    Haz clic en el botón para ejecutar una nueva simulación y ver los resultados en tiempo real.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button id="runSimulationBtn" class="btn btn-success btn-lg" onclick="runSimulation()">
+                                    <i class="bi bi-play-circle"></i> Ejecutar Simulación
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="row mb-4" style="display:none;">
+            <div class="col-12">
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <strong>Ejecutando simulación...</strong> Por favor espera...
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" style="display:none;">
+            
+            <!-- General Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center shadow stat-card">
+                        <div class="card-body">
+                            <i class="bi bi-people-fill text-success" style="font-size: 2.5rem;"></i>
+                            <h6 class="card-title mt-3 mb-2">Pacientes Atendidos</h6>
+                            <p class="card-text display-6" id="patientsServed">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center shadow stat-card">
+                        <div class="card-body">
+                            <i class="bi bi-exclamation-circle-fill text-warning" style="font-size: 2.5rem;"></i>
+                            <h6 class="card-title mt-3 mb-2">Pacientes Abandonados</h6>
+                            <p class="card-text display-6" id="patientsAbandoned">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center shadow stat-card">
+                        <div class="card-body">
+                            <i class="bi bi-percent text-info" style="font-size: 2.5rem;"></i>
+                            <h6 class="card-title mt-3 mb-2">% Atendidos</h6>
+                            <p class="card-text display-6" id="servedPercentage">0%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center shadow stat-card">
+                        <div class="card-body">
+                            <i class="bi bi-clock-history text-danger" style="font-size: 2.5rem;"></i>
+                            <h6 class="card-title mt-3 mb-2">Total Pacientes</h6>
+                            <p class="card-text display-6" id="totalPatients">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Waiting Times -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Tiempo Promedio de Espera por Prioridad</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <h6 class="mb-2">🔴 Emergencia</h6>
+                                    <p class="h5 text-danger" id="waitEmergency">0.00</p>
+                                    <small class="text-muted">minutos</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="mb-2">🟠 Urgencia</h6>
+                                    <p class="h5 text-warning" id="waitUrgency">0.00</p>
+                                    <small class="text-muted">minutos</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="mb-2">🟡 Consulta</h6>
+                                    <p class="h5 text-info" id="waitConsultation">0.00</p>
+                                    <small class="text-muted">minutos</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Utilization -->
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Utilización de Recursos</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="bi bi-person-check"></i> Médicos</span>
+                                    <span id="doctorUtilization">0%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div id="doctorBar" class="progress-bar bg-success" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="bi bi-hospital"></i> Enfermeras</span>
+                                    <span id="nurseUtilization">0%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div id="nurseBar" class="progress-bar bg-info" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span><i class="bi bi-door-closed"></i> Camas</span>
+                                    <span id="bedUtilization">0%</span>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div id="bedBar" class="progress-bar bg-warning" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Distribución de Pacientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="patientChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Utilización de Recursos</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="utilizationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="bi bi-download"></i> Descargar Resultados</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-primary" onclick="downloadJSON()">
+                                <i class="bi bi-file-earmark-json"></i> Descargar JSON
+                            </button>
+                            <button class="btn btn-secondary" onclick="printReport()">
+                                <i class="bi bi-printer"></i> Imprimir Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="row mt-5 mb-4">
+            <div class="col-12">
+                <hr>
+                <p class="text-center text-muted small mb-0">
+                    Simulación Sistema Hospitalario • Universidad Privada San Juan Bautista • 2026-I
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
